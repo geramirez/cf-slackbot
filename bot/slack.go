@@ -5,7 +5,7 @@ and responding.
 Code forked from `https://github.com/rapidloop/mybot`
 */
 
-package slack
+package cfslackbot
 
 import (
 	"encoding/json"
@@ -18,6 +18,8 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+var counter uint64
+
 // These two structures represent the response of the Slack API rtm.start.
 // Only some fields are included. The rest are ignored by json.Unmarshal.
 type responseRtmStart struct {
@@ -26,9 +28,18 @@ type responseRtmStart struct {
 	Url   string       `json:"url"`
 	Self  responseSelf `json:"self"`
 }
-
 type responseSelf struct {
 	Id string `json:"id"`
+}
+
+// These are the messages read off and written into the websocket. Since this
+// struct serves as both read and write, we include the "Id" field which is
+// required only for writing.
+type Message struct {
+	Id      uint64 `json:"id"`
+	Type    string `json:"type"`
+	Channel string `json:"channel"`
+	Text    string `json:"text"`
 }
 
 // slackStart does a rtm.start, and returns a websocket URL and user ID. The
@@ -64,14 +75,9 @@ func start(token string) (wsurl, id string, err error) {
 	return
 }
 
-type Bot struct {
-	ID         string
-	Connection *websocket.Conn
-}
-
 // Starts a websocket-based Real Time API session and return the websocket
 // and the ID of the (bot-)user whom the token belongs to.
-func Connect(token string) *Bot {
+func Connect(token string) (*websocket.Conn, string) {
 	wsurl, id, err := start(token)
 	if err != nil {
 		log.Fatal(err)
@@ -81,27 +87,16 @@ func Connect(token string) *Bot {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	return &Bot{ID: id, Connection: ws}
+	return ws, id
 }
 
-// These are the messages read off and written into the websocket. Since this
-// struct serves as both read and write, we include the "Id" field which is
-// required only for writing.
-type Message struct {
-	Id      uint64 `json:"id"`
-	Type    string `json:"type"`
-	Channel string `json:"channel"`
-	Text    string `json:"text"`
-}
-
+// Method for getting messages from the websocket connection
 func (bot *Bot) GetMessage() (m Message, err error) {
 	err = websocket.JSON.Receive(bot.Connection, &m)
 	return
 }
 
-var counter uint64
-
+// Methods for posting messages back into the slack
 func (bot *Bot) PostMessage(m Message) error {
 	m.Id = atomic.AddUint64(&counter, 1)
 	return websocket.JSON.Send(bot.Connection, m)
