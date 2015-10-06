@@ -12,19 +12,19 @@ import (
 )
 
 func main() {
-
+	// Start the bot server
 	bot := cfslackbot.InitBot()
-	fmt.Println("bot ready, ^C exits")
-
+	fmt.Println("Bot Ready")
 	for {
-		// get each incoming message
-		m, err := bot.GetMessage()
+		// Get each incoming message
+		message, err := bot.GetMessage()
 		if err != nil {
 			log.Fatal(err)
 		}
-		// process each message
-		if bot.Process(&m) {
-			bot.PostMessage(m)
+		// Process each message and respond if
+		// trigger is set
+		if bot.Process(&message) {
+			bot.PostMessage(message)
 		}
 	}
 }
