@@ -2,7 +2,6 @@ package cfslackbot
 
 import (
 	"fmt"
-	"os"
 
 	"golang.org/x/net/websocket"
 )
@@ -12,16 +11,16 @@ import (
 type Bot struct {
 	ID         string
 	Connection *websocket.Conn
+	CFToken *Token
 }
 
 // Function for initializing the bot
 func InitBot() *Bot {
-	slack_key := os.Getenv("SLACK_KEY")
-	if slack_key == "" {
-		fmt.Fprintf(os.Stderr, "SLACK_KEY missing from env")
-		os.Exit(1)
-	}
-	// start a websocket-based Real Time API session
-	ws, id := Connect(slack_key)
-	return &Bot{id, ws}
+	// Start a websocket-based Real Time API session
+	ws, id := NewSlackConnection()
+	fmt.Println("Slack Connection Ready")
+	// Initalize Cloud Foundry token
+	token := NewCloudFoundryToken()
+	fmt.Println("CloudFoundry Token Ready")
+	return &Bot{id, ws, token}
 }

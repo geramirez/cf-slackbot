@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"sync/atomic"
+	"os"
 
 	"golang.org/x/net/websocket"
 )
@@ -77,8 +78,14 @@ func start(token string) (wsurl, id string, err error) {
 
 // Starts a websocket-based Real Time API session and return the websocket
 // and the ID of the (bot-)user whom the token belongs to.
-func Connect(token string) (*websocket.Conn, string) {
-	wsurl, id, err := start(token)
+func NewSlackConnection() (*websocket.Conn, string) {
+	// Check if the keys exist
+	slack_key := os.Getenv("SLACK_KEY")
+	if slack_key == "" {
+		fmt.Fprintf(os.Stderr, "SLACK_KEY missing from env")
+		os.Exit(1)
+	}
+	wsurl, id, err := start(slack_key)
 	if err != nil {
 		log.Fatal(err)
 	}
